@@ -1,6 +1,6 @@
 # 🏛️ Enhanced Crystal Hunt: Civilization World - Gesture-Controlled Adventure
 
-![Enhanced Crystal Hunt](./enhanced_crystal_hunt.png)
+![Crystal Hunt](./crystal_hunt.png)
 
 **Explore infinite procedural worlds with ancient civilizations using your body as the controller!** This revolutionary gesture-controlled adventure combines computer vision, procedural generation, spatial audio, and historical discovery into an immersive exploration experience.
 
