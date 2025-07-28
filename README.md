@@ -172,11 +172,6 @@ Each game element generates unique audio signatures:
 Enhanced Crystal Hunt: Civilization World/
 ├── enhanced_crystal_hunt.html    # Complete game system
 ├── README.md                     # This enhanced documentation
-└── assets/
-    ├── procedural_music/         # Generated ambient tracks
-    ├── civilization_models/      # 3D structure templates
-    └── seasonal_textures/        # Dynamic world coloring
-```
 
 ### 🏗️ **Advanced Core Systems**
 
