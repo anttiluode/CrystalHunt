@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crystal Hunt - Gesture Flight Collection Game</title>
+    
+    <!-- Three.js and MediaPipe -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(180deg, #87CEEB 0%, #98FB98 20%, #228B22 100%);
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            color: #fff;
+        }
+        
+        .container { width: 100vw; height: 100vh; position: relative; }
+        
+        .startup {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 40px;
+            border-radius: 20px;
+            border: 3px solid #ff44ff;
+            backdrop-filter: blur(15px);
+        }
+        
+        .startup h1 {
+            font-size: 4em;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #ff44ff, #44ffff, #ffff44, #ff4444);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px #ff44ff;
+        }
+        
+        .start-btn {
+            background: linear-gradient(45deg, #ff0080, #8000ff, #00ff80, #ff8000);
+            border: none;
+            padding: 20px 40px;
+            font-size: 2em;
+            color: white;
+            cursor: pointer;
+            border-radius: 20px;
+            font-family: inherit;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin: 20px;
+        }
+        
+        .start-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 50px rgba(255, 68, 255, 0.8);
+        }
+        
+        .hidden { display: none !important; }
+        
+        #worldCanvas { position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        #webcamFeed {
+            position: absolute;
+            bottom: 20px; right: 20px;
+            width: 200px; height: 130px;
+            border: 3px solid #00ffff;
+            border-radius: 15px;
+            z-index: 100;
+            background: #000;
+        }
+        
+        .game-hud {
+            position: absolute;
+            top: 20px; left: 20px;
+            width: 350px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ff44ff;
+            border-radius: 15px;
+            padding: 20px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        
+        .energy-bar {
+            width: 100%;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        
+        .energy-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00);
+            width: 100%;
+            transition: width 0.3s;
+            border-radius: 10px;
+        }
+        
+        .crystal-counter {
+            font-size: 1.5em;
+            color: #ffff44;
+            text-shadow: 0 0 10px #ffff44;
+            margin: 10px 0;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 2000;
+            background: rgba(0, 0, 0, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            border: 3px solid #ff0000;
+            backdrop-filter: blur(15px);
+        }
+        
+        .game-over h2 {
+            font-size: 3em;
+            color: #ff0000;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px #ff0000;
+        }
+        
+        .final-score {
+            font-size: 1.5em;
+            color: #ffff44;
+            margin: 20px 0;
+        }
+        
+        .instruction-hint {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1px solid #ffff44;
+            z-index: 100;
+            font-size: 14px;
+            text-align: center;
+            animation: fadeInOut 3s infinite;
+        }
+        
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+        
+        .crystal-indicator {
+            position: absolute;
+            pointer-events: none;
+            z-index: 200;
+            color: #ffff44;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #ffff44;
+            animation: collectAnimation 1s ease-out forwards;
+        }
+        
+        @keyframes collectAnimation {
+            0% { transform: scale(1) translateY(0); opacity: 1; }
+            100% { transform: scale(2) translateY(-50px); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Startup Screen -->
+        <div class="startup" id="startup">
+            <h1>Crystal Hunt</h1>
+            <p style="font-size: 1.3em; margin: 20px 0; color: #ccc;">
+                Fly through infinite fractal worlds and collect magical crystals!<br>
+                Use your body to control flight - collect crystals before energy runs out!
+            </p>
+            <button class="start-btn" onclick="startGame()">🚀 Start Crystal Hunt 💎</button>
+        </div>
+        
+        <!-- Game Over Screen -->
+        <div class="game-over hidden" id="gameOverScreen">
+            <h2>Game Over!</h2>
+            <div class="final-score" id="finalScore">Crystals Collected: 0</div>
+            <button class="start-btn" onclick="restartGame()">🔄 Play Again</button>
+        </div>
+        
+        <!-- Game Interface -->
+        <div class="hidden" id="gameInterface">
+            <canvas id="worldCanvas"></canvas>
+            <canvas id="webcamFeed"></canvas>
+            
+            <!-- Game HUD -->
+            <div class="game-hud">
+                <div style="color: #ff44ff; font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 15px;">💎 CRYSTAL HUNT</div>
+                <div class="crystal-counter" id="crystalCounter">Crystals: 0</div>
+                <div style="color: #ff44ff; font-size: 12px;">Life Energy:</div>
+                <div class="energy-bar">
+                    <div class="energy-fill" id="energyFill"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 10px;">
+                    <span>Score: <span id="gameScore" style="color: #ffff44;">0</span></span>
+                    <span>Time: <span id="gameTime" style="color: #44ffff;">0:00</span></span>
+                </div>
+                <div style="font-size: 11px; margin-top: 10px; color: #ccc;">
+                    Speed: <span id="currentSpeed" style="color: #fff;">0 km/h</span>
+                </div>
+            </div>
+            
+            <!-- Instruction Hint -->
+            <div class="instruction-hint">
+                ✋ Raise left hand for speed • 🤲 Move right hand to steer • 🗣️ Tilt head to roll
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let gameState = 'menu';
+        let crystalsCollected = 0;
+        let lifeEnergy = 100;
+        let gameScore = 0;
+        let gameStartTime = 0;
+        let energyDecayRate = 0.8;
+        let crystalEnergyBonus = 20;
+        
+        // Flight and world variables
+        let scene, camera, renderer;
+        let poseDetector, cameraStream, webcamCanvas, webcamCtx;
+        let isActive = false;
+        let currentPose = null;
+        
+        let flightSpeed = 0;
+        let flightDirection = { x: 0, y: 0, z: 1 };
+        let cameraRotation = { x: 0, y: 0, z: 0 };
+        let altitude = 150;
+        
+        // World generation
+        const noise = new SimplexNoise();
+        const chunkSize = 300;
+        const viewDistance = 4;
+        const chunks = new Map();
+        const trees = [];
+        const crystals = [];
+        let chunksLoaded = 0;
+        
+        // Audio context for crystal sounds
+        let audioContext;
+        
+        // Simple Crystal class
+        class Crystal {
+            constructor(position, type = 'normal') {
+                this.position = position.clone();
+                this.originalPosition = position.clone();
+                this.type = type;
+                this.collected = false;
+                this.age = 0;
+                this.rotationSpeed = Math.random() * 0.02 + 0.01;
+                this.bobSpeed = Math.random() * 0.003 + 0.002;
+                this.energy = type === 'super' ? 35 : 20;
+                this.frequency = 200 + Math.random() * 800;
+                
+                // Create visual representation
+                const geometry = type === 'super' 
+                    ? new THREE.OctahedronGeometry(8, 1)
+                    : new THREE.OctahedronGeometry(5, 0);
+                    
+                const material = new THREE.MeshPhongMaterial({
+                    color: type === 'super' ? 0xffaa00 : 0x44ffff,
+                    transparent: true,
+                    opacity: 0.8,
+                    emissive: type === 'super' ? 0x442200 : 0x002244
+                });
+                
+                this.mesh = new THREE.Mesh(geometry, material);
+                this.mesh.position.copy(this.position);
+                this.mesh.castShadow = true;
+                scene.add(this.mesh);
+                
+                // Add glow effect
+                const glowGeometry = new THREE.SphereGeometry(type === 'super' ? 12 : 8, 16, 16);
+                const glowMaterial = new THREE.MeshBasicMaterial({
+                    color: type === 'super' ? 0xffaa00 : 0x44ffff,
+                    transparent: true,
+                    opacity: 0.2
+                });
+                this.glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
+                this.glowMesh.position.copy(this.position);
+                scene.add(this.glowMesh);
+            }
+            
+            update(deltaTime) {
+                if (this.collected) return;
+                
+                this.age += deltaTime;
+                
+                // Floating animation
+                this.mesh.rotation.y += this.rotationSpeed;
+                this.mesh.rotation.x += this.rotationSpeed * 0.5;
+                
+                const bobOffset = Math.sin(this.age * this.bobSpeed) * 3;
+                this.mesh.position.y = this.originalPosition.y + bobOffset;
+                this.glowMesh.position.copy(this.mesh.position);
+                
+                // Pulsing glow
+                const glowPulse = (Math.sin(this.age * 0.005) + 1) * 0.5;
+                this.glowMesh.material.opacity = 0.1 + glowPulse * 0.2;
+                
+                // Check for collection
+                const distanceToPlayer = this.mesh.position.distanceTo(camera.position);
+                if (distanceToPlayer < 15) {
+                    this.collect();
+                }
+            }
+            
+            collect() {
+                if (this.collected) return;
+                
+                this.collected = true;
+                scene.remove(this.mesh);
+                scene.remove(this.glowMesh);
+                
+                // Update game state
+                crystalsCollected++;
+                lifeEnergy = Math.min(100, lifeEnergy + this.energy);
+                gameScore += this.type === 'super' ? 100 : 50;
+                
+                // Play collection sound
+                this.playCollectionSound();
+                
+                // Show collection indicator
+                this.showCollectionEffect();
+                
+                // Update UI
+                updateGameUI();
+            }
+            
+            playCollectionSound() {
+                if (!audioContext) return;
+                
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(this.frequency, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(this.frequency * 2, audioContext.currentTime + 0.3);
+                
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
+                
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.3);
+            }
+            
+            showCollectionEffect() {
+                const indicator = document.createElement('div');
+                indicator.className = 'crystal-indicator';
+                indicator.textContent = this.type === 'super' ? '+100 💎' : '+50 💎';
+                indicator.style.left = '50%';
+                indicator.style.top = '40%';
+                document.body.appendChild(indicator);
+                
+                setTimeout(() => indicator.remove(), 1000);
+            }
+        }
+        
+        class CrystalHuntSystem {
+            constructor() {
+                this.initialized = false;
+            }
+            
+            async initialize() {
+                if (this.initialized) return;
+                
+                try {
+                    await this.initThreeJS();
+                    await this.initPoseDetection();
+                    await this.initAudio();
+                    this.setupEventListeners();
+                    this.initialized = true;
+                    console.log('🎮 Crystal Hunt System initialized');
+                } catch (error) {
+                    console.error('Initialization error:', error);
+                    throw error;
+                }
+            }
+            
+            async initThreeJS() {
+                scene = new THREE.Scene();
+                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20000);
+                renderer = new THREE.WebGLRenderer({ antialias: true, canvas: document.getElementById('worldCanvas') });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                
+                // Simple sky with fixed horizon
+                scene.background = new THREE.Color(0x87CEEB);
+                
+                // Lighting
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+                scene.add(ambientLight);
+                
+                const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                sunLight.position.set(1000, 1000, 500);
+                sunLight.castShadow = true;
+                sunLight.shadow.mapSize.width = 2048;
+                sunLight.shadow.mapSize.height = 2048;
+                scene.add(sunLight);
+                
+                camera.position.set(0, 150, 0);
+                camera.lookAt(0, 100, 100);
+                
+                console.log('🌍 3D World initialized');
+            }
+            
+            async initAudio() {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    console.log('🔊 Audio initialized');
+                } catch (error) {
+                    console.warn('Audio initialization failed:', error);
+                }
+            }
+            
+            async initPoseDetection() {
+                webcamCanvas = document.getElementById('webcamFeed');
+                webcamCtx = webcamCanvas.getContext('2d');
+                webcamCanvas.width = 200;
+                webcamCanvas.height = 130;
+                
+                if (!window.Pose || !window.Camera) {
+                    throw new Error('MediaPipe libraries not loaded');
+                }
+                
+                poseDetector = new window.Pose({
+                    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+                });
+                
+                poseDetector.setOptions({
+                    modelComplexity: 1,
+                    smoothLandmarks: true,
+                    enableSegmentation: false,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+                
+                poseDetector.onResults((results) => this.onPoseResults(results));
+                
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 640, height: 480, facingMode: 'user' }
+                });
+                
+                const videoElement = document.createElement('video');
+                videoElement.srcObject = stream;
+                videoElement.autoplay = true;
+                
+                cameraStream = new window.Camera(videoElement, {
+                    onFrame: async () => {
+                        if (poseDetector && isActive) {
+                            await poseDetector.send({ image: videoElement });
+                        }
+                    },
+                    width: 640,
+                    height: 480
+                });
+                
+                await cameraStream.start();
+                console.log('📹 Pose detection initialized');
+            }
+            
+            onPoseResults(results) {
+                webcamCtx.clearRect(0, 0, webcamCanvas.width, webcamCanvas.height);
+                
+                if (results.image) {
+                    webcamCtx.drawImage(results.image, 0, 0, webcamCanvas.width, webcamCanvas.height);
+                }
+                
+                if (results.poseLandmarks && window.drawConnectors && window.drawLandmarks) {
+                    window.drawConnectors(webcamCtx, results.poseLandmarks, window.POSE_CONNECTIONS, 
+                        { color: '#00FF00', lineWidth: 2 });
+                    window.drawLandmarks(webcamCtx, results.poseLandmarks, 
+                        { color: '#FF0000', lineWidth: 1 });
+                }
+                
+                if (results.poseLandmarks && gameState === 'playing') {
+                    this.processPoseForFlight(results.poseLandmarks);
+                }
+            }
+            
+            processPoseForFlight(landmarks) {
+                const nose = landmarks[0];
+                const leftWrist = landmarks[15];
+                const rightWrist = landmarks[16];
+                const leftShoulder = landmarks[11];
+                const rightShoulder = landmarks[12];
+                
+                // Head control
+                if (nose && leftShoulder && rightShoulder) {
+                    const shoulderCenter = {
+                        x: (leftShoulder.x + rightShoulder.x) / 2,
+                        y: (leftShoulder.y + rightShoulder.y) / 2
+                    };
+                    
+                    const headTilt = {
+                        x: (nose.x - shoulderCenter.x) * 2,
+                        y: (nose.y - shoulderCenter.y) * 2
+                    };
+                    
+                    cameraRotation.z = headTilt.x * 0.5;
+                    cameraRotation.x = headTilt.y * 0.3;
+                }
+                
+                // Right hand control (direction)
+                if (rightWrist && rightShoulder && rightWrist.visibility > 0.3) {
+                    const rightHandOffset = {
+                        x: (rightWrist.x - rightShoulder.x) * 5,
+                        y: (rightWrist.y - rightShoulder.y) * 5
+                    };
+                    
+                    flightDirection.x = Math.max(-1, Math.min(1, rightHandOffset.x * 0.8));
+                    flightDirection.y = Math.max(-1, Math.min(1, -rightHandOffset.y * 0.5));
+                } else {
+                    flightDirection.x *= 0.9; // Gradually return to center
+                    flightDirection.y *= 0.9;
+                }
+                
+                // Left hand control (speed)
+                if (leftWrist && leftWrist.visibility > 0.3) {
+                    const handY = leftWrist.y;
+                    const invertedY = 1 - handY;
+                    
+                    let speedControl = invertedY;
+                    if (invertedY > 0.5) {
+                        speedControl = (invertedY - 0.5) * 2;
+                    } else {
+                        speedControl = 0;
+                    }
+                    
+                    flightSpeed = speedControl * 240; // Max 240 km/h
+                } else {
+                    flightSpeed *= 0.9; // Gradually slow down
+                }
+            }
+            
+            generateTerrain(chunkX, chunkZ) {
+                const geometry = new THREE.PlaneGeometry(chunkSize, chunkSize, 100, 100);
+                const vertices = geometry.attributes.position.array;
+                const colors = [];
+                
+                for (let i = 0; i < vertices.length; i += 3) {
+                    const x = chunkX * chunkSize + vertices[i];
+                    const z = chunkZ * chunkSize + vertices[i + 1];
+                    
+                    // Multi-octave fractal noise for mountains
+                    let height = 0;
+                    height += noise.noise2D(x * 0.005, z * 0.005) * 200;
+                    height += noise.noise2D(x * 0.01, z * 0.01) * 100;
+                    height += noise.noise2D(x * 0.02, z * 0.02) * 50;
+                    height += noise.noise2D(x * 0.05, z * 0.05) * 20;
+                    height += noise.noise2D(x * 0.1, z * 0.1) * 5;
+                    
+                    vertices[i + 2] = height;
+                    
+                    // Enhanced coloring
+                    let color = new THREE.Color();
+                    if (height < -20) {
+                        color.setRGB(0.1, 0.2, 0.8);
+                    } else if (height < 0) {
+                        color.setRGB(0.2, 0.4, 0.9);
+                    } else if (height < 30) {
+                        color.setRGB(0.8, 0.7, 0.5);
+                    } else if (height < 80) {
+                        color.setRGB(0.3, 0.8, 0.2);
+                    } else if (height < 150) {
+                        color.setRGB(0.2, 0.6, 0.1);
+                    } else if (height < 250) {
+                        color.setRGB(0.4, 0.3, 0.2);
+                    } else {
+                        color.setRGB(0.9, 0.9, 0.9);
+                    }
+                    
+                    colors.push(color.r, color.g, color.b);
+                }
+                
+                geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+                geometry.computeVertexNormals();
+                
+                const material = new THREE.MeshLambertMaterial({ 
+                    vertexColors: true,
+                    side: THREE.DoubleSide
+                });
+                
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.rotation.x = -Math.PI / 2;
+                mesh.position.set(chunkX * chunkSize, 0, chunkZ * chunkSize);
+                mesh.receiveShadow = true;
+                mesh.castShadow = true;
+                
+                scene.add(mesh);
+                return mesh;
+            }
+            
+            addTreesAndCrystals(chunkX, chunkZ) {
+                // Add trees
+                for (let i = 0; i < 25; i++) {
+                    const x = chunkX * chunkSize + (Math.random() - 0.5) * chunkSize;
+                    const z = chunkZ * chunkSize + (Math.random() - 0.5) * chunkSize;
+                    
+                    let height = 0;
+                    height += noise.noise2D(x * 0.005, z * 0.005) * 200;
+                    height += noise.noise2D(x * 0.01, z * 0.01) * 100;
+                    height += noise.noise2D(x * 0.02, z * 0.02) * 50;
+                    height += noise.noise2D(x * 0.05, z * 0.05) * 20;
+                    height += noise.noise2D(x * 0.1, z * 0.1) * 5;
+                    
+                    if (height > 30 && height < 200 && Math.random() < 0.4) {
+                        this.createTree(x, height, z);
+                    }
+                }
+                
+                // Add crystals
+                const numCrystals = 3 + Math.floor(Math.random() * 4);
+                for (let i = 0; i < numCrystals; i++) {
+                    const x = chunkX * chunkSize + (Math.random() - 0.5) * chunkSize;
+                    const z = chunkZ * chunkSize + (Math.random() - 0.5) * chunkSize;
+                    
+                    let height = 0;
+                    height += noise.noise2D(x * 0.005, z * 0.005) * 200;
+                    height += noise.noise2D(x * 0.01, z * 0.01) * 100;
+                    height += noise.noise2D(x * 0.02, z * 0.02) * 50;
+                    height += noise.noise2D(x * 0.05, z * 0.05) * 20;
+                    height += noise.noise2D(x * 0.1, z * 0.1) * 5;
+                    
+                    if (height > 20 && height < 300) {
+                        const crystalY = height + 15;
+                        const position = new THREE.Vector3(x, crystalY, z);
+                        
+                        // 15% chance for super crystal
+                        const type = Math.random() < 0.15 ? 'super' : 'normal';
+                        const crystal = new Crystal(position, type);
+                        crystals.push(crystal);
+                    }
+                }
+            }
+            
+            createTree(x, y, z) {
+                const group = new THREE.Group();
+                group.position.set(x, y, z);
+                
+                const trunkHeight = 20 + Math.random() * 15;
+                const trunkRadius = 2 + Math.random() * 1;
+                const trunkGeometry = new THREE.CylinderGeometry(trunkRadius * 0.7, trunkRadius, trunkHeight, 8);
+                const trunkMaterial = new THREE.MeshLambertMaterial({ color: 0x4a4a2a });
+                const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+                trunk.position.y = trunkHeight / 2;
+                trunk.castShadow = true;
+                group.add(trunk);
+                
+                const foliageSize = 12 + Math.random() * 8;
+                const foliageGeometry = new THREE.SphereGeometry(foliageSize, 8, 6);
+                const foliageMaterial = new THREE.MeshLambertMaterial({ 
+                    color: new THREE.Color().setHSL(0.25 + Math.random() * 0.1, 0.7, 0.4)
+                });
+                const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
+                foliage.position.y = trunkHeight + foliageSize * 0.5;
+                foliage.castShadow = true;
+                group.add(foliage);
+                
+                scene.add(group);
+                trees.push(group);
+            }
+            
+            updateChunks() {
+                const chunkX = Math.floor(camera.position.x / chunkSize);
+                const chunkZ = Math.floor(camera.position.z / chunkSize);
+                
+                for (let dx = -viewDistance; dx <= viewDistance; dx++) {
+                    for (let dz = -viewDistance; dz <= viewDistance; dz++) {
+                        const key = `${chunkX + dx},${chunkZ + dz}`;
+                        if (!chunks.has(key)) {
+                            const mesh = this.generateTerrain(chunkX + dx, chunkZ + dz);
+                            chunks.set(key, mesh);
+                            this.addTreesAndCrystals(chunkX + dx, chunkZ + dz);
+                            chunksLoaded++;
+                        }
+                    }
+                }
+                
+                chunks.forEach((mesh, key) => {
+                    const [mx, mz] = key.split(',').map(Number);
+                    if (Math.abs(mx - chunkX) > viewDistance + 1 || Math.abs(mz - chunkZ) > viewDistance + 1) {
+                        scene.remove(mesh);
+                        chunks.delete(key);
+                    }
+                });
+            }
+            
+            updateFlight(deltaTime) {
+                if (gameState !== 'playing') return;
+                
+                const baseSpeed = 900;
+                const gestureSpeed = flightSpeed * 15;
+                const totalSpeed = baseSpeed + gestureSpeed;
+                const moveSpeed = totalSpeed * deltaTime * 0.05;
+                
+                const forward = new THREE.Vector3(0, 0, -1);
+                forward.applyQuaternion(camera.quaternion);
+                
+                const right = new THREE.Vector3(1, 0, 0);
+                right.applyQuaternion(camera.quaternion);
+                
+                const up = new THREE.Vector3(0, 1, 0);
+                up.applyQuaternion(camera.quaternion);
+                
+                const forwardMovement = forward.clone().multiplyScalar(moveSpeed);
+                const lateralMovement = right.clone().multiplyScalar(flightDirection.x * moveSpeed * 3);
+                const verticalMovement = up.clone().multiplyScalar(flightDirection.y * moveSpeed * 2);
+                
+                camera.position.add(forwardMovement);
+                camera.position.add(lateralMovement);
+                camera.position.add(verticalMovement);
+                
+                const targetRotationX = cameraRotation.x * 0.3;
+                const targetRotationZ = cameraRotation.z * 0.5;
+                
+                camera.rotation.x += (targetRotationX - camera.rotation.x) * 0.05;
+                camera.rotation.z += (targetRotationZ - camera.rotation.z) * 0.05;
+                
+                const turnSpeed = flightDirection.x * 0.02;
+                camera.rotation.y += turnSpeed;
+                
+                const minAltitude = 30;
+                const maxAltitude = 1000;
+                altitude = Math.max(minAltitude, Math.min(maxAltitude, camera.position.y));
+                camera.position.y = altitude;
+            }
+            
+            setupEventListeners() {
+                window.addEventListener('resize', () => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+            }
+            
+            start() {
+                isActive = true;
+                this.updateChunks();
+                this.animate();
+            }
+            
+            animate() {
+                if (!isActive) return;
+                
+                const deltaTime = 0.016;
+                
+                this.updateFlight(deltaTime);
+                this.updateChunks();
+                
+                // Update crystals
+                crystals.forEach(crystal => crystal.update(deltaTime));
+                
+                // Remove collected crystals
+                for (let i = crystals.length - 1; i >= 0; i--) {
+                    if (crystals[i].collected) {
+                        crystals.splice(i, 1);
+                    }
+                }
+                
+                // Update game logic
+                if (gameState === 'playing') {
+                    updateGameLogic(deltaTime);
+                }
+                
+                renderer.render(scene, camera);
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+        
+        // Game logic functions
+        function updateGameLogic(deltaTime) {
+            // Decrease life energy over time
+            lifeEnergy -= energyDecayRate * deltaTime;
+            
+            if (lifeEnergy <= 0) {
+                gameOver();
+                return;
+            }
+            
+            updateGameUI();
+        }
+        
+        function updateGameUI() {
+            document.getElementById('crystalCounter').textContent = `Crystals: ${crystalsCollected}`;
+            document.getElementById('gameScore').textContent = gameScore;
+            document.getElementById('energyFill').style.width = `${lifeEnergy}%`;
+            document.getElementById('currentSpeed').textContent = `${Math.round(flightSpeed)} km/h`;
+            
+            // Update time
+            const elapsed = (Date.now() - gameStartTime) / 1000;
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = Math.floor(elapsed % 60);
+            document.getElementById('gameTime').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Energy color changes
+            const energyFill = document.getElementById('energyFill');
+            if (lifeEnergy > 60) {
+                energyFill.style.background = 'linear-gradient(90deg, #00ff00, #80ff00, #ffff00)';
+            } else if (lifeEnergy > 30) {
+                energyFill.style.background = 'linear-gradient(90deg, #ffff00, #ff8000)';
+            } else {
+                energyFill.style.background = 'linear-gradient(90deg, #ff0000, #ff4000)';
+            }
+        }
+        
+        function gameOver() {
+            gameState = 'gameOver';
+            isActive = false;
+            
+            // Update final score
+            document.getElementById('finalScore').textContent = `Crystals Collected: ${crystalsCollected} | Score: ${gameScore}`;
+            
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+        }
+        
+        // Global system instance
+        let crystalHuntSystem = null;
+        
+        async function startGame() {
+            try {
+                document.getElementById('startup').classList.add('hidden');
+                document.getElementById('gameInterface').classList.remove('hidden');
+                
+                // Reset game state
+                crystalsCollected = 0;
+                lifeEnergy = 100;
+                gameScore = 0;
+                gameStartTime = Date.now();
+                gameState = 'playing';
+                flightSpeed = 0;
+                flightDirection = { x: 0, y: 0, z: 1 };
+                cameraRotation = { x: 0, y: 0, z: 0 };
+                
+                // Clear existing crystals
+                crystals.forEach(crystal => {
+                    if (crystal.mesh) scene.remove(crystal.mesh);
+                    if (crystal.glowMesh) scene.remove(crystal.glowMesh);
+                });
+                crystals.length = 0;
+                
+                if (!crystalHuntSystem) {
+                    crystalHuntSystem = new CrystalHuntSystem();
+                    await crystalHuntSystem.initialize();
+                }
+                
+                crystalHuntSystem.start();
+                updateGameUI();
+                
+                console.log('🎮 Crystal Hunt started!');
+                
+            } catch (error) {
+                console.error('Failed to start Crystal Hunt:', error);
+                alert('Failed to initialize Crystal Hunt. Please check camera permissions and try again.');
+                
+                // Return to startup screen on error
+                document.getElementById('startup').classList.remove('hidden');
+                document.getElementById('gameInterface').classList.add('hidden');
+            }
+        }
+        
+        function restartGame() {
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            startGame();
+        }
+        
+        // Keyboard fallback controls for testing
+        document.addEventListener('keydown', (event) => {
+            if (gameState !== 'playing') return;
+            
+            switch(event.key) {
+                case 'w': case 'ArrowUp':
+                    flightSpeed = Math.min(240, flightSpeed + 20);
+                    break;
+                case 's': case 'ArrowDown':
+                    flightSpeed = Math.max(0, flightSpeed - 20);
+                    break;
+                case 'a': case 'ArrowLeft':
+                    flightDirection.x = Math.max(-1, flightDirection.x - 0.2);
+                    break;
+                case 'd': case 'ArrowRight':
+                    flightDirection.x = Math.min(1, flightDirection.x + 0.2);
+                    break;
+                case 'q':
+                    cameraRotation.z = Math.max(-0.5, cameraRotation.z - 0.1);
+                    break;
+                case 'e':
+                    cameraRotation.z = Math.min(0.5, cameraRotation.z + 0.1);
+                    break;
+                case 'r':
+                    // Reset position if stuck
+                    camera.position.set(0, 150, 0);
+                    flightDirection = { x: 0, y: 0, z: 1 };
+                    cameraRotation = { x: 0, y: 0, z: 0 };
+                    break;
+            }
+        });
+        
+        document.addEventListener('keyup', (event) => {
+            if (gameState !== 'playing') return;
+            
+            switch(event.key) {
+                case 'a': case 'ArrowLeft':
+                case 'd': case 'ArrowRight':
+                    flightDirection.x *= 0.8;
+                    break;
+                case 'q': case 'e':
+                    cameraRotation.z *= 0.8;
+                    break;
+            }
+        });
+        
+        console.log('💎 Crystal Hunt ready to start!');
+        console.log('🎮 Use WASD keys for testing, or gesture controls for full experience!');
+        console.log('🏆 Collect crystals before your energy runs out!');
+    </script>
+</body>
+</html>
