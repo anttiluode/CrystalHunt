@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Crystal Hunt - Procedural Civilization World</title>
+    <title>Fused Crystal Hunt: World Mind Edition</title>
     
     <!-- Three.js and MediaPipe -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -325,6 +325,7 @@
         const viewDistance = 3;
         const chunks = new Map();
         const trees = [];
+        const cacti = [];
         const crystals = [];
         const civilizations = [];
         const infiniteAttractors = [];
@@ -559,7 +560,6 @@
                     opacity: 0.6,
                     linewidth: 3
                 });
-                
                 this.trailMesh = new THREE.Line(trailGeometry, trailMaterial);
                 scene.add(this.trailMesh);
             }
@@ -762,15 +762,16 @@
                     }
                     
                 } else {
-                    // Regular ancient building
-                    const buildingHeight = 5 + Math.random() * 8;
+                    // Regular ancient building (now a simple cube)
+                    const buildingHeight = 8 + Math.random() * 15;
+                    const buildingWidth = 8 + Math.random() * 8;
                     const buildingGeometry = new THREE.BoxGeometry(
-                        3 + Math.random() * 4,
+                        buildingWidth,
                         buildingHeight,
-                        3 + Math.random() * 4
+                        buildingWidth
                     );
                     const buildingMaterial = new THREE.MeshLambertMaterial({
-                        color: new THREE.Color().setHSL(0.1, 0.3, 0.4 + Math.random() * 0.2)
+                        color: new THREE.Color().setHSL(0.1, 0.2, 0.4 + Math.random() * 0.1)
                     });
                     const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
                     building.position.y = buildingHeight / 2;
@@ -864,11 +865,219 @@
                 });
                 
                 // Remove if too far
-                if (Math.abs(this.position.x) > 400 || Math.abs(this.position.z) > 400) {
+                if (Math.abs(this.position.x - camera.position.x) > 2000 || Math.abs(this.position.z - camera.position.z) > 2000) {
                     scene.remove(this.mesh);
                     return false;
                 }
                 return true;
+            }
+        }
+        
+        // JavaScript Port of Cognitive Bell Autoencoder - The "World Mind"
+        class CognitiveBellSystem {
+            constructor(grid_size = 64) {
+                this.grid_size = grid_size;
+                this.laplacian_kernel = [
+                    [0, 1, 0],
+                    [1, -4, 1],
+                    [0, 1, 0]
+                ];
+                
+                // Initialize 2D arrays
+                this.phi = Array.from({length: grid_size}, () => new Array(grid_size).fill(0));
+                this.phi_prev = this.clone2D(this.phi);
+                this.phi_dot = this.clone2D(this.phi);
+                this.emergent_particles = [];
+                
+                // Scouts
+                this.num_scouts = 200;
+                this.scout_pos = Array.from({length: this.num_scouts}, () => [Math.random() * grid_size, Math.random() * grid_size]);
+                this.scout_vel = Array.from({length: this.num_scouts}, () => [0, 0]);
+                this.scout_weights = new Array(this.num_scouts).fill(0.1);
+                
+                // World data
+                this.world_data = Array.from({length: grid_size}, () => new Array(grid_size).fill(0));
+                
+                // Reconstruction
+                this.reconstruction = this.clone2D(this.world_data);
+                
+                // Parameters
+                this.DT = 0.02;
+                this.SCOUT_DAMPING = 0.90;
+                this.ATTENTION_FORCE = 0.8;
+                this.EXPLORATION_NOISE = 0.15;
+                this.FEATURE_SENSITIVITY = 1.5;
+                this.BASE_C_WAVE_SQ = 1.0;
+                this.A_COEFF = 0.15;
+                this.B_COEFF = 0.1;
+                this.DAMPING = 0.02;
+                this.TENSION_FACTOR = 5.0;
+                this.BIHARMONIC_GAMMA = 0.02;
+                this.PARTICLE_THRESHOLD = 0.5;
+                this.SCOUT_STRIKE_STRENGTH = 0.5;
+            }
+            
+            clone2D(arr) {
+                return arr.map(row => row.slice());
+            }
+            
+            convolve2d(field, kernel) {
+                const output = Array.from({length: this.grid_size}, () => new Array(this.grid_size).fill(0));
+                for (let y = 0; y < this.grid_size; y++) {
+                    for (let x = 0; x < this.grid_size; x++) {
+                        let sum = 0;
+                        for (let ky = 0; ky < 3; ky++) {
+                            for (let kx = 0; kx < 3; kx++) {
+                                const ny = (y + ky - 1 + this.grid_size) % this.grid_size;
+                                const nx = (x + kx - 1 + this.grid_size) % this.grid_size;
+                                sum += field[ny][nx] * kernel[ky][kx];
+                            }
+                        }
+                        output[y][x] = sum;
+                    }
+                }
+                return output;
+            }
+            
+            gradient(field) {
+                const grad_x = this.clone2D(field);
+                const grad_y = this.clone2D(field);
+                for (let y = 0; y < this.grid_size; y++) {
+                    for (let x = 0; x < this.grid_size; x++) {
+                        grad_x[y][x] = field[y][(x + 1) % this.grid_size] - field[y][(x - 1 + this.grid_size) % this.grid_size];
+                        grad_y[y][x] = field[(y + 1) % this.grid_size][x] - field[(y - 1 + this.grid_size) % this.grid_size][x];
+                    }
+                }
+                return [grad_y, grad_x];
+            }
+            
+            update_scouts() {
+                const intensity = this.phi.map(row => row.map(v => v ** 2));
+                const [phi_grad_y, phi_grad_x] = this.gradient(intensity);
+                
+                for (let i = 0; i < this.num_scouts; i++) {
+                    let px = Math.floor(this.scout_pos[i][0]);
+                    let py = Math.floor(this.scout_pos[i][1]);
+
+                    // FIX: Ensure indices wrap correctly for both positive and negative values
+                    px = ((px % this.grid_size) + this.grid_size) % this.grid_size;
+                    py = ((py % this.grid_size) + this.grid_size) % this.grid_size;
+                    
+                    const force_x = phi_grad_x[py][px] * this.ATTENTION_FORCE;
+                    const force_y = phi_grad_y[py][px] * this.ATTENTION_FORCE;
+                    
+                    this.scout_vel[i][0] *= this.SCOUT_DAMPING;
+                    this.scout_vel[i][1] *= this.SCOUT_DAMPING;
+                    this.scout_vel[i][0] += force_x;
+                    this.scout_vel[i][1] += force_y;
+                    this.scout_vel[i][0] += (Math.random() - 0.5) * this.EXPLORATION_NOISE * 2;
+                    this.scout_vel[i][1] += (Math.random() - 0.5) * this.EXPLORATION_NOISE * 2;
+                    
+                    // FIX: Let position be continuous, wrap only when accessing grid
+                    this.scout_pos[i][0] += this.scout_vel[i][0] * this.DT;
+                    this.scout_pos[i][1] += this.scout_vel[i][1] * this.DT;
+                }
+            }
+            
+            scouts_sense_world() {
+                for (let i = 0; i < this.num_scouts; i++) {
+                    let ix = Math.floor(this.scout_pos[i][0]);
+                    let iy = Math.floor(this.scout_pos[i][1]);
+
+                    // FIX: Ensure indices wrap correctly for both positive and negative values
+                    ix = ((ix % this.grid_size) + this.grid_size) % this.grid_size;
+                    iy = ((iy % this.grid_size) + this.grid_size) % this.grid_size;
+
+                    const feature = this.world_data[iy][ix];
+                    this.scout_weights[i] += (feature * this.FEATURE_SENSITIVITY - 0.5) * this.DT;
+                    this.scout_weights[i] = Math.max(0.01, Math.min(1.0, this.scout_weights[i]));
+                }
+            }
+            
+            generate_strike_map() {
+                const strike_map = Array.from({length: this.grid_size}, () => new Array(this.grid_size).fill(0));
+                for (let i = 0; i < this.num_scouts; i++) {
+                    let ix = Math.floor(this.scout_pos[i][0]);
+                    let iy = Math.floor(this.scout_pos[i][1]);
+
+                    // FIX: Ensure indices wrap correctly for both positive and negative values
+                    ix = ((ix % this.grid_size) + this.grid_size) % this.grid_size;
+                    iy = ((iy % this.grid_size) + this.grid_size) % this.grid_size;
+
+                    strike_map[iy][ix] += this.scout_weights[i];
+                }
+                const blur_kernel = Array.from({length: 3}, () => new Array(3).fill(1/9));
+                return this.convolve2d(strike_map, blur_kernel);
+            }
+            
+            update_bell(strike_map) {
+                const laplacian = this.convolve2d(this.phi, this.laplacian_kernel);
+                const biharm = this.convolve2d(laplacian, this.laplacian_kernel);
+                
+                const local_c_sq = this.phi.map((row, y) => row.map((v, x) => this.BASE_C_WAVE_SQ / (1.0 + this.TENSION_FACTOR * v**2)));
+                
+                const wave_force = local_c_sq.map((row, y) => row.map((v, x) => v * laplacian[y][x]));
+                
+                const potential_force = this.phi.map((row, y) => row.map((v, x) => this.A_COEFF * v - this.B_COEFF * v**3));
+                
+                const damping_force = this.phi_dot.map((row, y) => row.map((v, x) => -this.DAMPING * v));
+                
+                const substrate_force = biharm.map((row, y) => row.map((v, x) => -this.BIHARMONIC_GAMMA * v));
+                
+                const scout_force = strike_map.map((row, y) => row.map((v, x) => v * this.SCOUT_STRIKE_STRENGTH));
+                
+                const phi_ddot = wave_force.map((row, y) => row.map((v, x) => v + potential_force[y][x] + damping_force[y][x] + substrate_force[y][x] + scout_force[y][x]));
+                
+                const phi_new = this.phi.map((row, y) => row.map((v, x) => 2 * v - this.phi_prev[y][x] + this.DT**2 * phi_ddot[y][x]));
+                
+                this.phi_dot = phi_new.map((row, y) => row.map((v, x) => (v - this.phi_prev[y][x]) / (2 * this.DT)));
+                
+                this.phi_prev = this.clone2D(this.phi);
+                
+                this.phi = phi_new;
+            }
+            
+            _track_internal_particles() {
+                const particles = [];
+                for (let y = 0; y < this.grid_size; y++) {
+                    for (let x = 0; x < this.grid_size; x++) {
+                        const v = this.phi[y][x];
+                        if (v > this.PARTICLE_THRESHOLD) {
+                            const up = this.phi[(y - 1 + this.grid_size) % this.grid_size][x];
+                            const down = this.phi[(y + 1) % this.grid_size][x];
+                            const left = this.phi[y][(x - 1 + this.grid_size) % this.grid_size];
+                            const right = this.phi[y][(x + 1) % this.grid_size];
+                            if (v > up && v > down && v > left && v > right) {
+                                particles.push([y, x]);
+                            }
+                        }
+                    }
+                }
+                this.emergent_particles = particles;
+            }
+            
+            update_reconstruction() {
+                this.reconstruction = this.reconstruction.map((row, y) => row.map((v, x) => v * 0.85));
+                for (let i = 0; i < this.num_scouts; i++) {
+                    let ix = Math.floor(this.scout_pos[i][0]);
+                    let iy = Math.floor(this.scout_pos[i][1]);
+
+                    // FIX: Ensure indices wrap correctly for both positive and negative values
+                    ix = ((ix % this.grid_size) + this.grid_size) % this.grid_size;
+                    iy = ((iy % this.grid_size) + this.grid_size) % this.grid_size;
+
+                    this.reconstruction[iy][ix] += this.scout_weights[i] * 0.2;
+                    this.reconstruction[iy][ix] = Math.min(1.0, this.reconstruction[iy][ix]);
+                }
+            }
+            
+            step() {
+                this.update_scouts();
+                this.scouts_sense_world();
+                const strike_map = this.generate_strike_map();
+                this.update_bell(strike_map);
+                this._track_internal_particles();
+                this.update_reconstruction();
             }
         }
         
@@ -877,6 +1086,8 @@
             constructor() {
                 this.initialized = false;
                 this.sunLight = null;
+                this.aiUpdateCounter = 0;
+                this.ai = null;
             }
             
             async initialize() {
@@ -887,11 +1098,73 @@
                     await this.initPoseDetection();
                     await this.initAudio();
                     this.setupEventListeners();
+                    this.ai = new CognitiveBellSystem();
+                    this.initPerceptionRenderer();
                     this.initialized = true;
-                    console.log('🎮 Enhanced Crystal Hunt System initialized');
+                    console.log('🎮 Enhanced Crystal Hunt System initialized with World Mind');
                 } catch (error) {
                     console.error('Initialization error:', error);
                     throw error;
+                }
+            }
+            
+            initPerceptionRenderer() {
+                this.perceptionRenderer = new THREE.WebGLRenderer();
+                this.perceptionRenderer.setSize(this.ai.grid_size, this.ai.grid_size);
+                this.perceptionRenderTarget = new THREE.WebGLRenderTarget(this.ai.grid_size, this.ai.grid_size);
+            }
+            
+            capturePerception() {
+                this.perceptionRenderer.setRenderTarget(this.perceptionRenderTarget);
+                this.perceptionRenderer.render(scene, camera);
+                const pixelBuffer = new Uint8Array(this.ai.grid_size * this.ai.grid_size * 4);
+                this.perceptionRenderer.readRenderTargetPixels(this.perceptionRenderTarget, 0, 0, this.ai.grid_size, this.ai.grid_size, pixelBuffer);
+                this.perceptionRenderer.setRenderTarget(null);
+                
+                const perceptionData = Array.from({length: this.ai.grid_size}, () => new Array(this.ai.grid_size).fill(0));
+                for (let y = 0; y < this.ai.grid_size; y++) {
+                    for (let x = 0; x < this.ai.grid_size; x++) {
+                        const idx = (y * this.ai.grid_size + x) * 4;
+                        perceptionData[y][x] = (pixelBuffer[idx] + pixelBuffer[idx+1] + pixelBuffer[idx+2]) / (3 * 255); // Grayscale
+                    }
+                }
+                this.ai.world_data = perceptionData;
+            }
+            
+            processAICommands() {
+                // Run AI step
+                this.ai.step();
+                
+                // Based on emergent particles (thoughts), execute commands
+                const num_thoughts = this.ai.emergent_particles.length;
+                if (num_thoughts > 50) { // High activity
+                    this.spawnArtifact('legendary');
+                } else if (num_thoughts > 30) { // Moderate
+                    this.spawnArtifact('rare');
+                } else if (Math.random() < 0.05) { // Random
+                    this.changeWeather('misty');
+                }
+            }
+            
+            spawnArtifact(type) {
+                const spawnOffset = new THREE.Vector3(
+                    (Math.random() - 0.5) * 200, 
+                    0, 
+                    (Math.random() - 0.5) * 200
+                );
+                const spawnPosition = camera.position.clone().add(spawnOffset);
+                let { height } = this.getHeightAndBiomeAtPosition(spawnPosition.x, spawnPosition.z);
+                spawnPosition.y = height + 15;
+                
+                console.log(`World Mind spawning ${type} artifact`);
+                const artifact = new CivilizationArtifact(spawnPosition, type);
+                crystals.push(artifact);
+            }
+            
+            changeWeather(weather) {
+                console.log(`World Mind changing weather to ${weather}`);
+                if (weather === 'misty') {
+                    scene.fog = new THREE.Fog(0xcccccc, 10, 500);
                 }
             }
             
@@ -936,6 +1209,7 @@
                 const color = new THREE.Color(seasonColor);
                 color.multiplyScalar(timeInfluence);
                 scene.background = color;
+                scene.fog = new THREE.Fog(color, chunkSize * 2, chunkSize * (viewDistance + 1));
             }
             
             async initAudio() {
@@ -1111,56 +1385,32 @@
                     flightSpeed *= 0.93;
                 }
             }
+
+            getBiome(x, z) {
+                // Use a very low frequency noise to determine the biome
+                const biomeNoise = noise.noise2D(x * 0.0002, z * 0.0002);
+
+                if (biomeNoise < -0.2) {
+                    return 'ocean';
+                } else if (biomeNoise > 0.3) {
+                    return 'desert';
+                } else {
+                    return 'land';
+                }
+            }
             
             generateTerrain(chunkX, chunkZ) {
-                const geometry = new THREE.PlaneGeometry(chunkSize, chunkSize, 128, 128);
+                const geometry = new THREE.PlaneGeometry(chunkSize, chunkSize, 64, 64); // Reduced segments for performance
                 const vertices = geometry.attributes.position.array;
                 const colors = [];
                 
                 for (let i = 0; i < vertices.length; i += 3) {
                     const x = chunkX * chunkSize + vertices[i];
                     const z = chunkZ * chunkSize + vertices[i + 1];
-                    
-                    // Enhanced multi-octave noise with civilization influence
-                    let height = 0;
-                    height += noise.noise2D(x * 0.003, z * 0.003) * 300;
-                    height += noise.noise2D(x * 0.008, z * 0.008) * 120;
-                    height += noise.noise2D(x * 0.02, z * 0.02) * 60;
-                    height += noise.noise2D(x * 0.05, z * 0.05) * 25;
-                    height += noise.noise2D(x * 0.1, z * 0.1) * 8;
-                    
-                    // Civilization influence - flat areas for structures
-                    const civNoise = noise.noise2D(x * 0.001, z * 0.001);
-                    if (civNoise > 0.3 && height > -10 && height < 50) {
-                        height = Math.lerp(height, 5, 0.7); // Flatten for civilizations
-                    }
+
+                    let { height, color } = this.getHeightAndBiomeAtPosition(x, z);
                     
                     vertices[i + 2] = height;
-                    
-                    // Enhanced seasonal coloring
-                    let color = new THREE.Color();
-                    const seasonalModifier = currentSeason === 'winter' ? 0.7 : 
-                                           currentSeason === 'autumn' ? 1.2 : 1.0;
-                    
-                    if (height < -30) {
-                        color.setRGB(0.1, 0.15, 0.4); // Deep water
-                    } else if (height < -10) {
-                        color.setRGB(0.2, 0.3, 0.6); // Shallow water
-                    } else if (height < 5) {
-                        color.setRGB(0.8, 0.75, 0.6); // Beach
-                    } else if (height < 40) {
-                        const grassColor = seasonColors[currentSeason].foliage;
-                        color.setHex(grassColor);
-                        color.multiplyScalar(0.6 + Math.random() * 0.2);
-                    } else if (height < 100) {
-                        color.setRGB(0.4, 0.35, 0.25); // Hills
-                    } else if (height < 200) {
-                        color.setRGB(0.5, 0.45, 0.4); // Mountains
-                    } else {
-                        color.setRGB(0.9, 0.9, 0.9); // Snow peaks
-                    }
-                    
-                    color.multiplyScalar(seasonalModifier);
                     colors.push(color.r, color.g, color.b);
                 }
                 
@@ -1181,93 +1431,171 @@
                 scene.add(mesh);
                 return mesh;
             }
-            
-            addCivilizationsAndCrystals(chunkX, chunkZ) {
+
+            spawnCity(cityX, cityZ) {
+                const numBuildings = 5 + Math.floor(Math.random() * 10);
+                citiesFound++;
+                for (let i = 0; i < numBuildings; i++) {
+                    const buildingX = cityX + (Math.random() - 0.5) * 150;
+                    const buildingZ = cityZ + (Math.random() - 0.5) * 150;
+                    const { height: buildingY } = this.getHeightAndBiomeAtPosition(buildingX, buildingZ);
+
+                    // Ensure it spawns on the ground
+                    if (buildingY > 0) {
+                       const structure = new CivilizationStructure(buildingX, buildingY, buildingZ, 'building');
+                       civilizations.push(structure);
+                    }
+                }
+                // Add a pyramid to the city center
+                const { height: pyramidY } = this.getHeightAndBiomeAtPosition(cityX, cityZ);
+                if (pyramidY > 0) {
+                    const pyramid = new CivilizationStructure(cityX, pyramidY, cityZ, 'pyramid');
+                    civilizations.push(pyramid);
+                }
+            }
+
+            addContentToChunk(chunkX, chunkZ) {
                 const chunkWorldX = chunkX * chunkSize;
                 const chunkWorldZ = chunkZ * chunkSize;
-                
-                // Add civilizations (less frequent but more impressive)
-                const civNoise = noise.noise2D(chunkX * 0.3, chunkZ * 0.3);
-                if (civNoise > 0.4 && Math.random() < 0.3) {
-                    const civX = chunkWorldX + (Math.random() - 0.5) * chunkSize * 0.6;
-                    const civZ = chunkWorldZ + (Math.random() - 0.5) * chunkSize * 0.6;
+                const biome = this.getBiome(chunkWorldX, chunkWorldZ);
+
+                switch (biome) {
+                    case 'desert':
+                        // High chance of spawning a city in a desert chunk
+                        if (Math.random() < 0.25) {
+                           this.spawnCity(chunkWorldX + (Math.random() - 0.5) * chunkSize * 0.5, chunkWorldZ + (Math.random() - 0.5) * chunkSize * 0.5);
+                        }
+                        // Add cacti
+                        for (let i = 0; i < 20; i++) {
+                            const x = chunkWorldX + (Math.random() - 0.5) * chunkSize;
+                            const z = chunkWorldZ + (Math.random() - 0.5) * chunkSize;
+                            const { height } = this.getHeightAndBiomeAtPosition(x, z);
+                            if (height > 5) {
+                                this.createCactus(x, height, z);
+                            }
+                        }
+                        break;
                     
-                    // Determine terrain height
-                    let height = this.getHeightAtPosition(civX, civZ);
-                    
-                    if (height > -5 && height < 60) {
-                        // Choose civilization type based on terrain
-                        let civType = 'building';
-                        if (height < 10 && Math.random() < 0.3) civType = 'temple';
-                        else if (height > 20 && Math.random() < 0.2) civType = 'pyramid';
+                    case 'land':
+                        // Add enhanced trees with seasonal variation
+                        for (let i = 0; i < 35; i++) {
+                            const x = chunkWorldX + (Math.random() - 0.5) * chunkSize;
+                            const z = chunkWorldZ + (Math.random() - 0.5) * chunkSize;
+                            const { height } = this.getHeightAndBiomeAtPosition(x, z);
+                            if (height > 8 && height < 150) {
+                                this.createEnhancedTree(x, height, z);
+                            }
+                        }
+                        break;
+
+                    case 'ocean':
+                        // Ocean is mostly empty on the surface
+                        break;
+                }
+
+                // Add crystals to all land-based biomes
+                if (biome !== 'ocean') {
+                    const numCrystals = 4 + Math.floor(Math.random() * 6);
+                    for (let i = 0; i < numCrystals; i++) {
+                        const x = chunkWorldX + (Math.random() - 0.5) * chunkSize;
+                        const z = chunkWorldZ + (Math.random() - 0.5) * chunkSize;
+                        const { height } = this.getHeightAndBiomeAtPosition(x, z);
                         
-                        const civ = new CivilizationStructure(civX, height, civZ, civType);
-                        civilizations.push(civ);
-                        citiesFound++;
+                        if (height > 5) {
+                            const crystalY = height + 8; // Float above ground
+                            const position = new THREE.Vector3(x, crystalY, z);
+                            let type = 'relic';
+                            if (Math.random() < 0.05) type = 'legendary';
+                            else if (Math.random() < 0.15) type = 'rare';
+                            crystals.push(new CivilizationArtifact(position, type));
+                        }
                     }
                 }
-                
-                // Add crystals in accessible areas (more frequent)
-                const numCrystals = 4 + Math.floor(Math.random() * 6);
-                for (let i = 0; i < numCrystals; i++) {
-                    const x = chunkWorldX + (Math.random() - 0.5) * chunkSize;
-                    const z = chunkWorldZ + (Math.random() - 0.5) * chunkSize;
-                    
-                    let height = this.getHeightAtPosition(x, z);
-                    
-                    // Place crystals in accessible areas
-                    if (height > 5 && height < 250) {
-                        const crystalY = height + 8; // Float above ground
-                        const position = new THREE.Vector3(x, crystalY, z);
-                        
-                        // Varied crystal types
-                        let type = 'relic';
-                        if (Math.random() < 0.05) type = 'legendary';
-                        else if (Math.random() < 0.15) type = 'rare';
-                        
-                        const crystal = new CivilizationArtifact(position, type);
-                        crystals.push(crystal);
-                    }
-                }
-                
-                // Add enhanced trees with seasonal variation
-                for (let i = 0; i < 35; i++) {
-                    const x = chunkWorldX + (Math.random() - 0.5) * chunkSize;
-                    const z = chunkWorldZ + (Math.random() - 0.5) * chunkSize;
-                    
-                    let height = this.getHeightAtPosition(x, z);
-                    
-                    if (height > 8 && height < 150 && Math.random() < 0.6) {
-                        this.createEnhancedTree(x, height, z);
-                    }
-                }
-                
-                // Add volumetric clouds
+
+                // Add volumetric clouds and attractors everywhere
                 if (Math.random() < 0.4) {
-                    const cloud = new VolumetricCloud(
+                    volumetricClouds.push(new VolumetricCloud(
                         chunkWorldX + (Math.random() - 0.5) * chunkSize,
                         120 + Math.random() * 80,
                         chunkWorldZ + (Math.random() - 0.5) * chunkSize
-                    );
-                    volumetricClouds.push(cloud);
+                    ));
                 }
-                
-                // Spawn infinite attractors occasionally
                 if (Math.random() < 0.15) {
-                    const attractor = new InfiniteAttractor();
-                    infiniteAttractors.push(attractor);
+                    infiniteAttractors.push(new InfiniteAttractor());
                 }
             }
             
-            getHeightAtPosition(x, z) {
-                // Simplified height calculation for positioning objects
+            getHeightAndBiomeAtPosition(x, z) {
+                const biome = this.getBiome(x, z);
                 let height = 0;
-                height += noise.noise2D(x * 0.003, z * 0.003) * 300;
-                height += noise.noise2D(x * 0.008, z * 0.008) * 120;
-                height += noise.noise2D(x * 0.02, z * 0.02) * 60;
-                return height;
+                let color = new THREE.Color();
+                
+                switch (biome) {
+                    case 'ocean':
+                        height = -40 + noise.noise2D(x * 0.005, z * 0.005) * 10;
+                        color.setRGB(0.1, 0.2, 0.4); // Deep blue
+                        break;
+
+                    case 'desert':
+                        height = 5 + noise.noise2D(x * 0.01, z * 0.01) * 3 + noise.noise2D(x * 0.05, z * 0.05) * 2; // Sandy dunes
+                        color.setHex(0xC2B280); // Sand color
+                        color.multiplyScalar(0.9 + Math.random() * 0.1);
+                        break;
+
+                    case 'land':
+                    default:
+                        // Mountainous terrain logic
+                        height += noise.noise2D(x * 0.003, z * 0.003) * 200;
+                        height += noise.noise2D(x * 0.008, z * 0.008) * 80;
+                        height += noise.noise2D(x * 0.02, z * 0.02) * 40;
+                        height += noise.noise2D(x * 0.1, z * 0.1) * 5;
+
+                        // Coloring for land
+                        if (height < 5) { // Beach transition
+                            color.setHex(0xD2B48C); // Tan
+                        } else if (height < 80) {
+                            const grassColor = seasonColors[currentSeason].foliage;
+                            color.setHex(grassColor);
+                            color.multiplyScalar(0.6 + Math.random() * 0.2);
+                        } else if (height < 150) {
+                            color.setRGB(0.5, 0.45, 0.4); // Mountains
+                        } else {
+                            color.setRGB(0.9, 0.9, 0.9); // Snow peaks
+                        }
+                        break;
+                }
+                return { height, biome, color };
             }
             
+            createCactus(x, y, z) {
+                const group = new THREE.Group();
+                group.position.set(x, y, z);
+
+                const cactusMaterial = new THREE.MeshLambertMaterial({ color: 0x2E8B57 });
+                
+                // Main trunk
+                const trunkHeight = 4 + Math.random() * 6;
+                const trunkGeometry = new THREE.CylinderGeometry(0.5, 0.5, trunkHeight, 8);
+                const trunk = new THREE.Mesh(trunkGeometry, cactusMaterial);
+                trunk.position.y = trunkHeight / 2;
+                trunk.castShadow = true;
+                group.add(trunk);
+
+                // Arms
+                if (Math.random() > 0.3) {
+                    const armHeight = 2 + Math.random() * 2;
+                    const armGeometry = new THREE.CylinderGeometry(0.4, 0.4, armHeight, 8);
+                    const arm = new THREE.Mesh(armGeometry, cactusMaterial);
+                    arm.position.y = trunkHeight * 0.6;
+                    arm.position.x = 0.5;
+                    arm.rotation.z = -Math.PI / 2;
+                    group.add(arm);
+                }
+
+                scene.add(group);
+                cacti.push(group);
+            }
+
             createEnhancedTree(x, y, z) {
                 const group = new THREE.Group();
                 group.position.set(x, y, z);
@@ -1328,19 +1656,20 @@
                         const key = `${chunkX + dx},${chunkZ + dz}`;
                         if (!chunks.has(key)) {
                             const mesh = this.generateTerrain(chunkX + dx, chunkZ + dz);
-                            chunks.set(key, mesh);
-                            this.addCivilizationsAndCrystals(chunkX + dx, chunkZ + dz);
+                            chunks.set(key, { mesh });
+                            this.addContentToChunk(chunkX + dx, chunkZ + dz);
                             chunksLoaded++;
                         }
                     }
                 }
                 
                 // Remove distant chunks
-                chunks.forEach((mesh, key) => {
+                chunks.forEach((chunkData, key) => {
                     const [mx, mz] = key.split(',').map(Number);
                     if (Math.abs(mx - chunkX) > viewDistance + 1 || Math.abs(mz - chunkZ) > viewDistance + 1) {
-                        scene.remove(mesh);
+                        scene.remove(chunkData.mesh);
                         chunks.delete(key);
+                        // NOTE: For a full game, you would also remove trees, cacti, etc. associated with this chunk
                     }
                 });
             }
@@ -1360,7 +1689,6 @@
                 right.applyQuaternion(camera.quaternion);
                 
                 const up = new THREE.Vector3(0, 1, 0);
-                up.applyQuaternion(camera.quaternion);
                 
                 const forwardMovement = forward.clone().multiplyScalar(moveSpeed);
                 const lateralMovement = right.clone().multiplyScalar(flightDirection.x * moveSpeed * 2.5);
@@ -1370,6 +1698,20 @@
                 camera.position.add(lateralMovement);
                 camera.position.add(verticalMovement);
                 
+                // Ground collision and altitude constraints
+                const { height: groundHeight, biome } = this.getHeightAndBiomeAtPosition(camera.position.x, camera.position.z);
+                const minAltitude = (biome === 'ocean' ? 10 : 25) + groundHeight;
+                const maxAltitude = 800 + groundHeight;
+                
+                if (camera.position.y < minAltitude) {
+                    camera.position.y = minAltitude;
+                } else if (camera.position.y > maxAltitude) {
+                    camera.position.y = maxAltitude;
+                }
+                
+                altitude = camera.position.y - groundHeight;
+
+
                 // Enhanced camera rotation
                 const targetRotationX = cameraRotation.x * 0.25;
                 const targetRotationZ = cameraRotation.z * 0.4;
@@ -1378,31 +1720,23 @@
                 camera.rotation.z += (targetRotationZ - camera.rotation.z) * 0.08;
                 
                 const turnSpeed = flightDirection.x * 0.025;
-                camera.rotation.y += turnSpeed;
-                
-                // Altitude constraints
-                const minAltitude = 25;
-                const maxAltitude = 800;
-                altitude = Math.max(minAltitude, Math.min(maxAltitude, camera.position.y));
-                camera.position.y = altitude;
+                camera.rotation.y -= turnSpeed; // Inverted for more intuitive turning
                 
                 // Update current biome based on position
                 this.updateCurrentBiome();
             }
             
             updateCurrentBiome() {
-                const height = this.getHeightAtPosition(camera.position.x, camera.position.z);
-                let biome = 'Ocean';
+                const { biome, height } = this.getHeightAndBiomeAtPosition(camera.position.x, camera.position.z);
+                let biomeName = "Unknown";
+                switch(biome) {
+                    case 'ocean': biomeName = 'Deep Ocean'; break;
+                    case 'desert': biomeName = 'Endless Dunes'; break;
+                    case 'land': biomeName = height > 80 ? 'Highlands' : 'Temperate Forest'; break;
+                }
                 
-                if (height < -10) biome = 'Deep Ocean';
-                else if (height < 5) biome = 'Coastal';
-                else if (height < 40) biome = 'Temperate Forest';
-                else if (height < 100) biome = 'Hills';
-                else if (height < 200) biome = 'Mountains';
-                else biome = 'Alpine';
-                
-                document.getElementById('currentBiome').textContent = biome;
-                document.getElementById('currentAltitude').textContent = Math.round(camera.position.y) + 'm';
+                document.getElementById('currentBiome').textContent = biomeName;
+                document.getElementById('currentAltitude').textContent = Math.round(altitude) + 'm';
             }
             
             updateTimeAndSeason(deltaTime) {
@@ -1493,66 +1827,14 @@
                 
                 const deltaTime = 0.016;
                 
+                requestAnimationFrame(() => this.animate());
+
                 this.updateFlight(deltaTime);
                 this.updateChunks();
                 this.updateTimeAndSeason(deltaTime);
                 
                 // Update crystals/artifacts
                 crystals.forEach(crystal => crystal.update(deltaTime));
-                
-                // Check for tree collection
-                trees.forEach((tree, index) => {
-                    if (!tree.userData.collected) {
-                        const distanceToPlayer = tree.position.distanceTo(camera.position);
-                        if (distanceToPlayer < 25) { // Larger collection radius for trees
-                            tree.userData.collected = true;
-                            
-                            // Add energy and score
-                            lifeEnergy = Math.min(100, lifeEnergy + 4);
-                            gameScore += 5;
-                            
-                            // Visual effect
-                            tree.children.forEach(child => {
-                                if (child.material) {
-                                    child.material.transparent = true;
-                                    child.material.opacity = 0.3;
-                                }
-                            });
-                            
-                            // Play collection sound
-                            if (audioContext && sfxEnabled) {
-                                const oscillator = audioContext.createOscillator();
-                                const gainNode = audioContext.createGain();
-                                
-                                oscillator.connect(gainNode);
-                                gainNode.connect(audioContext.destination);
-                                
-                                oscillator.frequency.setValueAtTime(300, audioContext.currentTime);
-                                oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.2);
-                                
-                                gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
-                                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
-                                
-                                oscillator.start();
-                                oscillator.stop(audioContext.currentTime + 0.2);
-                            }
-                            
-                            // Show collection indicator
-                            const indicator = document.createElement('div');
-                            indicator.className = 'crystal-indicator';
-                            indicator.textContent = '+4 🌳 ENERGY!';
-                            indicator.style.left = '50%';
-                            indicator.style.top = '45%';
-                            indicator.style.fontSize = '20px';
-                            indicator.style.color = '#44ff44';
-                            document.body.appendChild(indicator);
-                            
-                            setTimeout(() => indicator.remove(), 1000);
-                            
-                            updateGameUI();
-                        }
-                    }
-                });
                 
                 // Update infinite attractors
                 infiniteAttractors.forEach((attractor, index) => {
@@ -1569,27 +1851,6 @@
                     }
                 });
                 
-                // Spawn new clouds occasionally
-                if (Math.random() < 0.002) {
-                    const cloud = new VolumetricCloud(
-                        camera.position.x + (Math.random() - 0.5) * 800,
-                        120 + Math.random() * 80,
-                        camera.position.z + (Math.random() - 0.5) * 800
-                    );
-                    volumetricClouds.push(cloud);
-                }
-                
-                // Spawn new attractors occasionally
-                if (Math.random() < 0.001 && infiniteAttractors.length < 3) {
-                    const attractor = new InfiniteAttractor();
-                    attractor.position.set(
-                        camera.position.x + (Math.random() - 0.5) * 400,
-                        camera.position.y + (Math.random() - 0.5) * 100,
-                        camera.position.z + (Math.random() - 0.5) * 400
-                    );
-                    infiniteAttractors.push(attractor);
-                }
-                
                 // Remove collected crystals
                 for (let i = crystals.length - 1; i >= 0; i--) {
                     if (crystals[i].collected) {
@@ -1602,8 +1863,15 @@
                     updateGameLogic(deltaTime);
                 }
                 
+                // World Mind (AI) integration
+                this.aiUpdateCounter++;
+                if (this.aiUpdateCounter > 60) {
+                    this.capturePerception();
+                    this.processAICommands();
+                    this.aiUpdateCounter = 0;
+                }
+                
                 renderer.render(scene, camera);
-                requestAnimationFrame(() => this.animate());
             }
         }
         
@@ -1694,26 +1962,35 @@
                 currentSeason = 'spring';
                 timeOfDay = 6; // Start at dawn
                 
-                // Clear existing objects
-                crystals.forEach(crystal => {
-                    if (crystal.mesh) scene.remove(crystal.mesh);
-                    if (crystal.glowMesh) scene.remove(crystal.glowMesh);
-                });
+                if (!crystalHuntSystem) {
+                    crystalHuntSystem = new CrystalHuntSystem();
+                    await crystalHuntSystem.initialize();
+                }
+
+                // Clear scene before starting
+                if (scene) {
+                    while(scene.children.length > 0) {
+                        scene.remove(scene.children[0]);
+                    }
+                }
+                
+                // Reset arrays
                 crystals.length = 0;
                 infiniteAttractors.length = 0;
                 civilizations.length = 0;
                 volumetricClouds.length = 0;
                 trees.length = 0;
-                
-                if (!crystalHuntSystem) {
-                    crystalHuntSystem = new CrystalHuntSystem();
-                    await crystalHuntSystem.initialize();
-                }
-                
+                cacti.length = 0;
+                chunks.clear();
+
+                // Re-add lights and re-init scene
+                await crystalHuntSystem.initThreeJS();
+                camera.position.set(0, 150, 0);
+
                 crystalHuntSystem.start();
                 updateGameUI();
                 
-                console.log('🎮 Enhanced Civilization Hunt started!');
+                console.log('🎮 Enhanced Civilization Hunt started with World Mind!');
                 
             } catch (error) {
                 console.error('Failed to start Enhanced Crystal Hunt:', error);
@@ -1727,15 +2004,6 @@
         
         function restartGame() {
             document.getElementById('gameOverScreen').classList.add('hidden');
-            
-            // Clear the scene
-            if (scene) {
-                while(scene.children.length > 0) {
-                    scene.remove(scene.children[0]);
-                }
-            }
-            chunks.clear();
-            
             startGame();
         }
         
@@ -1764,7 +2032,8 @@
                     break;
                 case 'r':
                     // Reset position if stuck
-                    camera.position.set(0, 150, 0);
+                    const { height } = crystalHuntSystem.getHeightAndBiomeAtPosition(camera.position.x, camera.position.z);
+                    camera.position.y = height + 50;
                     flightDirection = { x: 0, y: 0, z: 1 };
                     cameraRotation = { x: 0, y: 0, z: 0 };
                     break;
@@ -1804,10 +2073,9 @@
             }
         });
         
-        console.log('🏛️ Enhanced Crystal Hunt: Civilization World ready!');
-        console.log('🎮 Features: Procedural civilizations, volumetric clouds, infinite attractors, seasonal changes');
-        console.log('🌈 Hunt for artifacts, catch rainbow attractors, explore ancient cities!');
-        console.log('🎵 Controls: M=Music, N=SFX, T=Time, C=Season, WASD=Flight, QE=Roll');
+        console.log('🏛️ Fused Crystal Hunt: World Mind Edition ready!');
+        console.log('🎮 Features: Procedural civilizations, volumetric clouds, infinite attractors, seasonal changes, integrated Cognitive Bell AI as World Mind');
+        console.log('🌈 Hunt for artifacts, catch rainbow attractors, explore ancient cities guided by the World\'s thoughts!');
     </script>
 </body>
 </html>
