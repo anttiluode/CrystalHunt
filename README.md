@@ -1,266 +1,144 @@
-# 🏛️ Enhanced Crystal Hunt: Civilization World - Gesture-Controlled Adventure
+Of course, here is an updated README.md for your project, reflecting the new features and structure of your code.
 
-![Crystal Hunt](./crystal_hunt.png)
+🏛️ Crystal Hunt: Civilization World
 
-**Explore infinite procedural worlds with ancient civilizations using your body as the controller!** This revolutionary gesture-controlled adventure combines computer vision, procedural generation, spatial audio, and historical discovery into an immersive exploration experience.
+![alt text](./crystal_hunt.png)
 
-## 🚀 [Play Now](https://anttiluode.github.io/enhanced-crystal-hunt/)
+Explore infinite procedural worlds with ancient civilizations using your body as the controller! This immersive gesture-controlled adventure combines computer vision, procedural generation, and spatial audio into a unique exploration experience.
 
-> **Note**: Requires webcam access for gesture controls. Works best in Chrome/Edge browsers with good lighting.
+🚀 Play Now
 
-## 🎮 Game Overview
+Link to your live game deployment would go here.
 
-Enhanced Crystal Hunt: Civilization World is a groundbreaking browser-based adventure where players use **full-body movements** to fly through procedurally generated 3D worlds filled with ancient civilizations, rainbow attractors, and mystical artifacts. Each discovery produces unique sounds and visual effects, creating a truly synesthetic exploration experience.
+Note: Requires webcam access for gesture controls. Works best in modern desktop browsers like Chrome or Edge with good lighting conditions.
 
-### 🎯 Objectives
-- **🏛️ Discover ancient civilizations** - temples, pyramids, and lost cities
-- **💎 Collect civilization artifacts** to restore your life energy
-- **🌈 Chase rainbow attractors** for massive point bonuses and meow sounds
-- **🌍 Survive and explore** infinite procedural worlds
-- **⭐ Master advanced gesture controls** for precision flight
+🎮 Game Overview
 
-### ✨ Revolutionary Features
+Crystal Hunt: Civilization World is a browser-based adventure where players use full-body movements to fly through procedurally generated 3D worlds. The world is filled with ancient civilizations, mysterious rainbow attractors, and powerful artifacts. Each discovery produces unique sounds and visual effects, creating a truly synesthetic exploration.
 
-#### 🏛️ **Procedural Civilizations**
-- **Ancient Temples** with legendary artifacts (500 pts)
-- **Mysterious Pyramids** surrounded by rare treasures (200 pts)
-- **Lost Cities** with scattered relics (75 pts)
-- **Flattened terrain** where civilizations naturally emerge
+🎯 Objectives
 
-#### 🌈 **Infinite Attractors**
-- **Rainbow spheres** that fly through the world with colorful trails
-- **Confined flight patterns** (30-200m altitude as specified)
-- **Meow sounds** when caught (+1000 points!)
-- **Limited spawning** (max 3 at once) for balanced challenge
+🏛️ Discover lost civilizations: Find and explore ancient temples, pyramids, and procedurally generated cities.
 
-#### ☁️ **3D Volumetric Clouds**
-- **Multi-sphere cloud formations** drifting across the sky
-- **Dynamic weather systems** affecting visibility
-- **Time-of-day opacity** changes for realistic atmosphere
+💎 Collect ancient artifacts to restore your life energy and increase your score.
 
-#### 🌿 **Living World Systems**
-- **Dynamic seasons** (Spring → Summer → Autumn → Winter)
-- **Day/night cycles** with moving sun and lighting
-- **Weather patterns** based on cloud density
-- **Biome detection** (Ocean, Forest, Hills, Mountains, Alpine)
+🌈 Chase elusive rainbow attractors for massive point bonuses.
 
-#### 🎵 **Enhanced Audio Experience**
-- **Procedural ambient music** with chord progressions
-- **Artifact-specific sounds** (different tones for legendary/rare/normal)
-- **Rainbow attractor meows** using filtered oscillators
-- **Sound controls** (Music ON/OFF, SFX ON/OFF)
+🌍 Survive and explore an infinite world with dynamic seasons and a full day/night cycle.
 
-## 🎮 Advanced Controls
+⭐ Master gesture controls for precision flight and deep immersion.
 
-### 🎛️ **Gesture Controls** (Primary)
-| Gesture | Action | Description |
-|---------|--------|-------------|
-| **✋ Left Hand Height** | Speed Control | Raise hand = faster flight (up to 280 km/h) |
-| **🤲 Right Hand Position** | Precision Steering | Move hand for left/right/up/down control |
-| **🗣️ Head Tilt** | Banking & Roll | Tilt head for realistic flight banking |
-| **📷 Body Presence** | Auto-Detection | Real-time pose tracking with visual feedback |
+✨ Key Features
+🏛️ Procedural Civilizations
 
-### ⌨️ **Enhanced Keyboard Controls**
-| Key | Action | Key | Action |
-|-----|--------|-----|--------|
-| `W/S` or `↑/↓` | Speed control | `M` | Toggle music |
-| `A/D` or `←/→` | Steering | `N` | Toggle sound effects |
-| `Q/E` | Roll left/right | `T` | Fast-forward time |
-| `R` | Reset position | `C` | Change season manually |
+Ancient Temples & Pyramids: Discover monumental structures that house the rarest artifacts.
 
-### 💎 **Artifact Types & Values**
+Lost Cities: Explore procedurally generated settlements with multiple buildings.
 
-| Type | Appearance | Energy | Points | Rarity | Found Near |
-|------|------------|--------|--------|--------|------------|
-| **🏛️ Legendary** | Gold Dodecahedron | +50 | +500 | Ultra Rare | Ancient Temples |
-| **💎 Rare** | Orange Octahedron | +35 | +200 | Rare | Pyramid Sites |
-| **⚱️ Relic** | Cyan Tetrahedron | +25 | +75 | Common | Lost Cities |
-| **🌈 Rainbow Attractor** | Color-shifting Sphere | +40 | +1000 | Special | Flying Freely |
+Discovery Bonus: Earn significant points for each new city you find.
 
-## 🛠️ Technical Innovations
+🌈 Infinite Rainbow Attractors
 
-### 🎨 **Advanced Graphics & Rendering**
-- **Three.js WebGL** with enhanced shadow mapping (4096×4096)
-- **Multi-octave terrain** with civilization-influenced flattening
-- **Seasonal color systems** affecting all vegetation
-- **Dynamic lighting** with sun position based on time of day
-- **Volumetric cloud rendering** with multi-sphere formations
+Dynamic Targets: Chase rainbow-colored spheres that fly through the world on unpredictable paths.
 
-### 👁️ **Computer Vision Excellence**
-- **MediaPipe Pose** for full-body tracking (40 landmarks)
-- **Enhanced gesture recognition** with smoothing and thresholds
-- **Real-time visual feedback** showing pose connections
-- **Visibility-based controls** preventing erratic movement
+High-Value Rewards: Catching an attractor grants a huge score bonus and restores a significant amount of energy.
 
-### 🎵 **Procedural Audio Systems**
-- **Web Audio API** with complex filter chains
-- **Frequency-mapped artifacts** (150-750 Hz range)
-- **Multi-oscillator meow synthesis** with lowpass filtering
-- **Ambient music loops** with Am chord progressions
+Unique Audio Cues: A special sound effect signals a successful catch.
 
-### 🌍 **Advanced World Generation**
-- **Infinite chunked terrain** (400×400 unit chunks)
-- **5-octave Simplex noise** for realistic mountain generation
-- **Civilization noise influence** creating natural building sites
-- **Dynamic object spawning** (trees, artifacts, clouds, attractors)
-- **Biome-based coloring** with seasonal modifiers
+🌿 Living World Systems
 
-### 📋 **Enhanced Requirements**
-- **Modern browser** (Chrome 90+, Firefox 88+, Safari 14+)
-- **Webcam with good lighting** for optimal pose detection
-- **HTTPS connection** (required for MediaPipe)
-- **WebGL support** for 3D rendering
-- **Web Audio API** support for procedural sounds
+Dynamic Seasons: The world cycles through Spring, Summer, Autumn, and Winter, changing the color of the sky and foliage.
 
-## 🎯 **Advanced Game Mechanics**
+Full Day/Night Cycle: Watch the sun travel across the sky, with realistic changes to lighting and fog.
 
-### ⚡ **Energy Management System**
-- **Starting energy**: 100% life force
-- **Decay rate**: 0.6% per second (reduced from original)
-- **Artifact restoration**: +25/35/50 energy based on type
-- **Visual feedback**: Color-coded energy bar (green→yellow→red)
+Diverse Biomes: Fly through forests, deserts, hills, mountains, and oceans, each with unique terrain and content.
 
-### 🎮 **Enhanced Flight Physics**
-- **Base speed**: 1200 units/second + gesture boost
-- **Gesture speed**: Up to 280 km/h additional
-- **Banking system**: Head tilt creates realistic roll
-- **Altitude constraints**: 25-800 meter flight envelope
-- **Momentum-based movement** with enhanced inertia
+🎵 Immersive Audio Experience
 
-### 🏆 **Advanced Scoring System**
-- **Artifact collection**: 75/200/500 points by type
-- **Rainbow attractors**: 1000 points + massive energy boost
-- **Survival bonus**: Time-based progression
-- **Discovery bonus**: Points for finding new civilizations
-- **Comprehensive final score**: Artifacts × Attractors × Cities × Survival
+Procedural Ambient Music: A calming, generative soundtrack that enhances the feeling of exploration.
 
-### 🌍 **World Discovery System**
-- **Biome detection**: Real-time terrain analysis
-- **Civilization tracking**: Automatic discovery counting
-- **Weather monitoring**: Cloud density affects conditions
-- **Altitude tracking**: Current flight height display
+Artifact-Specific Sounds: The sound of collecting an artifact changes based on its rarity.
 
-## 🎨 **Enhanced Visual Design**
+Full Audio Controls: Independently toggle background music and sound effects.
 
-### 🌈 **Evolved Art Style**
-- **Procedural civilizations** with authentic ancient architecture
-- **Rainbow attractor trails** with HSL color cycling
-- **Seasonal terrain coloring** affecting all world elements
-- **Volumetric cloud systems** with realistic drift patterns
-- **Enhanced crystal effects** with type-specific geometries
+🎮 Controls
+🎛️ Gesture Controls (Primary)
+Gesture	Action	Description
+✋ Left Hand Up/Down	Speed Control	Raise your left hand to increase flight speed, lower it to slow down.
+🤲 Right Hand Position	Steering	Move your right hand left/right to turn and up/down to pitch the camera.
+🗣️ Head Position	Banking & Pitch	Lean your body and head to influence banking and look up or down.
+⌨️ Keyboard Controls (Alternative/Debug)
+Key	Action	Key	Action
+W/S or ↑/↓	Speed up / Slow down	M	Toggle music
+A/D or ←/→	Turn left / Turn right	N	Toggle sound effects
+Q/E	Roll left / Roll right	T	Advance time of day
+R	Reset player altitude		
+💎 Collectibles & Scoring
+Artifacts
 
-### 🎭 **Professional UI/UX**
-- **Multi-panel HUD** with civilization tracking
-- **Season and time indicators** in top-right corner
-- **World status panel** showing biome and weather
-- **Real-time webcam feed** with pose overlay
-- **Audio control buttons** for music and SFX
+Artifacts are remnants of past civilizations. Collecting them restores life energy and adds to your score.
 
-## 🔊 **Sophisticated Audio Design**
+Type	Appearance	Energy	Points	Found Near
+🏛️ Legendary	Gold Dodecahedron	+50	+500	Temples
+💎 Rare	Orange Octahedron	+35	+200	Pyramids
+⚱️ Relic	Cyan Tetrahedron	+25	+75	Common, near cities
+Attractors & Discoveries
+Type	Appearance	Energy	Points	Notes
+🌈 Attractor	Rainbow Sphere	+40	+1000	Flies through the world
+🏙️ Discovery	-	-	+2500	Awarded for finding a new city
+🛠️ Technical Details
+🎨 Graphics & World Generation
 
-### 🎵 **Procedural Audio Evolution**
-Each game element generates unique audio signatures:
-- **Artifact frequencies**: Mathematical position mapping (150-750 Hz)
-- **Type-based modifiers**: Legendary (×1.5), Rare (×1.2), Normal (×1.0)
-- **Rainbow attractor meows**: 3-oscillator filtered synthesis
-- **Ambient music**: Scheduled Am chord progressions with filtering
-- **Spatial audio effects**: Distance-based volume attenuation
+Three.js/WebGL: Powers the 3D rendering engine.
 
-## 🧪 **Technical Architecture Evolution**
+Simplex Noise: Used for generating infinite, realistic, and chunk-based terrain.
 
-```
-Enhanced Crystal Hunt: Civilization World/
-├── enhanced_crystal_hunt.html    # Complete game system
-├── README.md                     # This enhanced documentation
+Procedural Placement: Algorithms for dynamically placing civilizations, trees, cacti, and artifacts based on biome and altitude.
 
-### 🏗️ **Advanced Core Systems**
+Dynamic Lighting & Shadows: A moving directional sun casts real-time shadows (PCFSoftShadowMap) that change with the time of day.
 
-1. **Enhanced Gesture Recognition Pipeline**
-   - MediaPipe pose detection (40-point tracking)
-   - Advanced hand/head/body interpretation
-   - Smoothed movement translation
-   - Visibility-based control validation
+Seasonal & Time-Based Colors: The world's color palette for the sky, fog, and foliage shifts dynamically.
 
-2. **Procedural Civilization Engine**
-   - Noise-based civilization placement
-   - Dynamic structure generation (temples/pyramids/buildings)
-   - Artifact spawning algorithms
-   - Cultural significance modeling
+👁️ Computer Vision
 
-3. **Living World System**
-   - Seasonal progression mechanics
-   - Day/night cycle simulation
-   - Weather pattern generation
-   - Biome classification algorithms
+MediaPipe Pose: Provides real-time, in-browser full-body pose detection from the webcam feed.
 
-4. **Advanced Audio Engine**
-   - Multi-track procedural synthesis
-   - Frequency-mapped artifact sounds
-   - Complex filter chain processing
-   - Spatial audio management
+Gesture Recognition: Translates the 3D coordinates of body landmarks (hands, shoulders, head) into smooth flight controls.
 
-5. **Rainbow Attractor System**
-   - Physics-based flight patterns
-   - Constraint-based movement (30-200m altitude)
-   - Trail rendering with color cycling
-   - Collection detection and rewards
+🎵 Procedural Audio
 
-## 🌟 **New Game Features**
+Web Audio API: Used to create all in-game sounds and music from scratch.
 
-### 🎮 **Enhanced Gameplay Mechanics**
-- **🏛️ Civilization Discovery**: Find and explore ancient sites
-- **🌈 Attractor Hunting**: Chase flying rainbow spheres
-- **🌿 Seasonal Adaptation**: World changes affect gameplay
-- **⏰ Time Progression**: Day/night cycles with dynamic lighting
-- **🎵 Audio Customization**: Toggle music and effects independently
+Generative Music: Simple oscillators and gain nodes create a continuous, non-repetitive ambient score.
 
-### 🎯 **Advanced Objectives**
-- **Artifact Collection**: Discover legendary treasures in temples
-- **Attractor Mastery**: Catch flying rainbow spheres for huge bonuses
-- **World Exploration**: Discover all biomes and civilizations
-- **Survival Endurance**: Master energy management for extended flights
-- **Seasonal Expertise**: Experience all four seasons
+Synthesized SFX: Sound effects for collecting items are generated with custom oscillator and filter settings, with frequencies changing based on artifact rarity.
 
-## 🐛 **Enhanced Compatibility & Performance**
+🏆 Game Mechanics
 
-### ✅ **Optimizations**
-- **Chunk-based world loading** prevents memory issues
-- **Dynamic object culling** maintains 60fps performance
-- **Efficient pose detection** with reduced resolution processing
-- **Audio context management** prevents browser audio limitations
+⚡ Energy System: Your life energy constantly depletes. Collect artifacts to replenish it. If it runs out, the game is over.
 
-### ⚠️ **Known Enhancements Needed**
-- **Mobile gesture controls** could be added for touch devices
-- **VR support** would create even more immersive experience
-- **Multiplayer exploration** could enable shared world discovery
-- **Save system** for persistent world exploration progress
+✈️ Flight Physics: A smooth, momentum-based flight model that responds to subtle gestures. Altitude is constrained to keep you above the ground but below the stratosphere.
 
-## 📜 **License**
+📊 Scoring System: Your final score is a combination of:
 
-This enhanced project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+Artifact Score: Points from collected artifacts.
 
-## 🙏 **Enhanced Acknowledgments**
+Attractor Score: Points from catching rainbow attractors.
 
-### 🛠️ **Technologies Used**
-- **[Three.js](https://threejs.org/)** - Advanced 3D graphics and WebGL
-- **[MediaPipe](https://mediapipe.dev/)** - Professional pose detection
-- **[Simplex Noise](https://github.com/jwagner/simplex-noise.js)** - Procedural world generation
-- **[Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)** - Complex audio synthesis
+Discovery Score: Bonus points for each civilization found.
 
-### 🌟 **Inspiration Sources**
-- **Ancient civilizations** and archaeological discovery
-- **Fractal geometry** and procedural generation techniques
-- **Synesthetic art** combining visual and audio experiences
-- **Gesture-based interaction** design principles
+Survival Score: A small bonus for every second you stay alive.
 
-### 🎨 **Creative Influences**
-- **No Man's Sky** for infinite exploration concepts
-- **Journey** for atmospheric world design
-- **Minecraft** for procedural world generation
-- **Monument Valley** for architectural aesthetics
+🎭 Professional UI/UX: A clean, multi-panel HUD provides all necessary information without cluttering the view, including world status, score, energy, and a live webcam feed.
 
----
+📜 License
 
-**🌍 Embark on the ultimate civilization discovery adventure!** 🏛️🌈💎
+This project is licensed under the MIT License.
 
-*Experience the convergence of ancient history, cutting-edge technology, and natural human movement in the most advanced gesture-controlled exploration game ever created.*
+🙏 Acknowledgments
+
+Three.js for the powerful 3D library.
+
+MediaPipe for the incredible pose detection technology.
+
+Simplex Noise for the terrain generation algorithm.
